@@ -130,6 +130,21 @@
     [super writeJavascript:[NSString stringWithFormat:@"setTimeout(function() { %@; }, 0);", callback]];
 }
 
+- (void) extendAccessTokenIfNeeded:(NSMutableArray*)arguments withDict:(NSMutableDictionary*)options
+{
+    NSString* callbackId = [arguments objectAtIndex:0]; // first item is the callbackId
+
+    if(!self.facebook) {
+      return;
+    }
+
+    [facebook extendAccessTokenIfNeeded];
+    
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+    NSString* callback = [pluginResult toSuccessCallbackString:callbackId];
+    [super writeJavascript:[NSString stringWithFormat:@"setTimeout(function() { %@; }, 0);", callback]];
+}
+
 - (void) dealloc
 {
     self.facebook = nil;
@@ -217,11 +232,20 @@
 
 - (void)fbDidExtendToken:(NSString*)accessToken
                expiresAt:(NSDate*)expiresAt {
+    NSLog(@"fBDidExtendToken %@ expiresAt %@", accessToken, expiresAt);
+    
     // Updated stored session information
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:accessToken forKey:@"FBAccessTokenKey"];
     [defaults setObject:expiresAt forKey:@"FBExpirationDateKey"];
     [defaults synchronize];
+
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:
+                                     [self responseObject]];
+    NSString* callback = [pluginResult toSuccessCallbackString:self.loginCallbackId];
+    
+    // we need to wrap the callback in a setTimeout(func, 0) so it doesn't block the UI (handleOpenURL limitation)
+    [super writeJavascript:[NSString stringWithFormat:@"setTimeout(function() { %@; }, 0);", callback]];
 }
 
 - (void)fbSessionInvalidated {
