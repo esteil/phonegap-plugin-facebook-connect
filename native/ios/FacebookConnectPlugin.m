@@ -232,8 +232,6 @@
 
 - (void)fbDidExtendToken:(NSString*)accessToken
                expiresAt:(NSDate*)expiresAt {
-    NSLog(@"fBDidExtendToken %@ expiresAt %@", accessToken, expiresAt);
-    
     // Updated stored session information
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:accessToken forKey:@"FBAccessTokenKey"];
